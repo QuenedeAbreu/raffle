@@ -41,9 +41,9 @@ export const UserDropdown = () => {
           key='profile'
           className='flex flex-col justify-start w-full items-start'>
           <p>Signed in as</p>
-          <p>{session && session.user?.email}</p>
+          <p>{session && session.user?.name}</p>
           <p>Role</p>
-          <p>{session && (session.user as any)?.role}</p>
+          <p>{session && session.user?.role}</p>
         </DropdownItem>
         <DropdownItem key='settings'>My Settings</DropdownItem>
         <DropdownItem key='team_settings'>Team Settings</DropdownItem>

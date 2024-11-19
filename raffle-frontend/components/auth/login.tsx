@@ -2,12 +2,13 @@
 
 import { LoginSchema } from "@/helpers/schemas";
 import { LoginFormType } from "@/helpers/types";
-import { Button, Input } from "@nextui-org/react";
+import { Button, Divider, Input } from "@nextui-org/react";
 import { Formik } from "formik";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { signIn } from "next-auth/react";
+import { ButtonGoogle } from "../button/ButtonGoogle";
 
 export const Login = () => {
   const [error, setError] = useState('')
@@ -79,9 +80,19 @@ export const Login = () => {
             <Button
               onPress={() => handleSubmit()}
               variant='flat'
-              color='primary'>
+              color='primary'
+              className="w-1/2"
+            >
               Login
             </Button>
+            <div className='flex justify-center items-center  w-1/2 max-w-1/2 mt-4 mb-4'>
+              <Divider className="mr-2 w-1/3 " />
+              <p className="text-gray-500">ou</p>
+              <Divider className="ml-2 w-1/3" />
+            </div>
+            <ButtonGoogle
+              onClick={() => signIn('google')}
+            />
           </>
         )}
       </Formik>

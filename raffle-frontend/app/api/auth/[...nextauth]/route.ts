@@ -1,9 +1,14 @@
 import NextAuth from "next-auth";
 import {NextAuthOptions} from "next-auth";
 import CredentialProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 
 const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!
+    }),
     CredentialProvider({
       name: 'Credentials',
       credentials: {
@@ -11,7 +16,7 @@ const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials){
-        const user = { id: "7", name: "Quenede", email: "quenede.in@gmail.com", password:'123',role:'admin' }
+        const user = { id: "7", name: "Quenede", email: "quenede.in@gmail.com", password:'123',role:'admin',teste:' 1212' }
         if (user.email === credentials?.email && user.password === credentials?.password) {
           return user
         } else {
@@ -25,14 +30,18 @@ const authOptions: NextAuthOptions = {
       if(user){
         return {
           ...token,
+          name:customUser.name,
+          email:customUser.email,
           role:customUser.role
         };
       }
+
       return token;
     },
-    session: async ({ session, token }) => {
-     
-      return {...session,
+    session: async ({ session, token,user }) => {
+
+      return {
+        ...session,
         user: {
             name:token.name,
             email:token.email,
