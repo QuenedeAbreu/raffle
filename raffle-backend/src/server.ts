@@ -5,6 +5,7 @@ import bodyParser from 'body-parser';
 import authRoutes from './routes/authRoutes';
 import raffleRoutes from './routes/raffleRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import path from 'path';
 
 const app = express();
 
@@ -18,6 +19,9 @@ app.use('/api/payments', paymentRoutes);
 
 // Rota para webhooks (Mercado Pago)
 app.post('/api/webhook', paymentRoutes);
+
+// Middleware para servir arquivos estáticos da pasta uploads
+app.use('/uploads', express.static(path.join(__dirname, 'public/')));
 
 // Inicie o servidor
 const PORT = process.env.PORT || 4000;

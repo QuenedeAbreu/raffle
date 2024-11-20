@@ -1,63 +1,68 @@
 // src/controllers/authController.ts
 import {RequestHandler } from 'express';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
+import { z } from "zod";
+import * as serviceAuth from '../services/service.auth';
+import { deleteImage } from '../utils/uploadImage';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
 
 export const register: RequestHandler = async (req, res) => {
-  const { email, password, isAdmin } = req.body;
-  if (!email || !password) {
-     res.status(400).json({ message: 'Email e senha são obrigatórios' });
-     return;
+  const registerSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    cpf: z.string().optional(),
+    birthDate: z.preprocess(
+      (arg) => (typeof arg === "string" ? new Date(arg) : arg), // Converte string para Date
+      z.date() // Valida como um tipo Date
+    ),
+    imagePerfil: z.string().optional(),
+    isAdmin: z.boolean().optional(),
+  });
+
+  const bodyZod = registerSchema.safeParse(req.body);
+  if (!bodyZod.success) {
+    if (req.body.imagePerfil) {
+      deleteImage(req.body.imagePerfil);
+    }
+    res.status(400).json({ message: 'Dados inválidos',bodyZod });
+    return;
   }
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-
+    const existingUser = await prisma.user.findUnique({ where: { email: bodyZod.data.email } });
     if (existingUser) {
-       res.status(400).json({ message: 'Usuário já existe' });
+      res.status(400).json({ message: 'Usuário já existe' });
+      return;
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await prisma.user.create({
-      data: { email, password: hashedPassword, isAdmin: isAdmin || false },
-    });
-
-     res.status(201).json({ id: user.id, email: user.email, isAdmin: user.isAdmin });
+    const hashedPassword = await bcrypt.hash(bodyZod.data.password, 10);
+    const userData = {
+      ...bodyZod.data,
+      password: hashedPassword,
+    };
+    
+    const user = await prisma.user.create({data: userData});
+    res.status(201).json({ message: 'Usuário registrado com sucesso', user });
   } catch (error) {
     console.error(error);
-     res.status(500).json({ message: 'Erro interno do servidor' });
+    res.status(500).json({ message: 'Erro interno do servidor' });
   }
 }
-
 export const login: RequestHandler = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-     res.status(400).json({ message: 'Email e senha são obrigatórios' });
-     return
-  }
-  const user = await prisma.user.findUnique({ where: { email } });
-
-      if (!user) {
-        res.status(401).json({ message: 'Credenciais inválidas' });
-      }
-
-    if(user){
-
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        res.status(401).json({ message: 'Credenciais inválidas' });
-      }
-    
-      const token = jwt.sign({ id: user.id, isAdmin: user.isAdmin }, JWT_SECRET, {
-        expiresIn: '1h',
-      });
-    
-      res.json({ token });
+  const loginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+  });
+    const bodyZod = loginSchema.safeParse(req.body);
+    if (!bodyZod.success) {
+       res.status(400).json({ message: 'Dados inválidos' });
+       return;
     }
-    else{
-      res.status(401).json({ message: 'Credenciais inválidas' });
+    const userLogin  = await serviceAuth.login(bodyZod.data);
+    if (!userLogin.is_login) {
+       res.status(401).json({ message: userLogin.message });
     }
+     res.status(200).json({ is_login:userLogin.is_login,token: userLogin.token, user: userLogin.user });
   }
