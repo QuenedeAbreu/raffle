@@ -7,10 +7,12 @@ import * as serviceAuth from '../services/service.auth';
 import { deleteImage } from '../utils/uploadImage';
 
 
+
 export const register: RequestHandler = async (req, res) => {
+  console.log(req.body);
   const registerSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
+    email:  z.string().email({ message: "Email inválido" }),
+    password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
     name: z.string().optional(),
     phone: z.string().optional(),
     address: z.string().optional(),
@@ -20,10 +22,11 @@ export const register: RequestHandler = async (req, res) => {
       z.date() // Valida como um tipo Date
     ),
     imagePerfil: z.string().optional(),
-    isAdmin: z.boolean().optional(),
+    isAdmin: z.boolean().optional().default(false),
   });
 
   const bodyZod = registerSchema.safeParse(req.body);
+  console.log(bodyZod.error?.issues);
   if (!bodyZod.success) {
     if (req.body.imagePerfil) {
       deleteImage(req.body.imagePerfil);
@@ -43,7 +46,12 @@ export const register: RequestHandler = async (req, res) => {
       password: hashedPassword,
     };
     
-    const user = await prisma.user.create({data: userData});
+    const user = await serviceAuth.register(userData);
+    if (!user) {
+      res.status(400).json({ message: 'Erro ao criar usuário' });
+      return;
+    }
+    user.imagePerfil = `${process.env.BASE_URL}/uploads/image/perfil/${user.imagePerfil}`;
     res.status(201).json({ message: 'Usuário registrado com sucesso', user });
   } catch (error) {
     console.error(error);
