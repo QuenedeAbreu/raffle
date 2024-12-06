@@ -97,7 +97,7 @@ export async function uploadObject(bucketName: string, objectName: string, fileP
     // Obtém o namespace necessário para as operações
     const namespaceResponse = await client.getNamespace({});
     const namespaceName = namespaceResponse.value;
-    // Criação do pedido para listar objetos no bucket
+    // Criação do pedido para listar objetos no bucket 
     const request = {
       namespaceName: namespaceName,
       bucketName: bucketName,
