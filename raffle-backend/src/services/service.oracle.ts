@@ -1,36 +1,34 @@
-import {listBuckets} from '../providers/oracle/objsctStorage'
+// import {listBuckets} from '../providers/oracle/objsctStorage'
 import * as oci from 'oci-objectstorage';
 import { ConfigFileAuthenticationDetailsProvider  } from 'oci-common';
 import path from 'path';
 import * as fs from "fs";
 
 const configFilePath = path.join(__dirname,'..','providers','oracle' ,'.oci', 'config');
+const provider = new ConfigFileAuthenticationDetailsProvider(configFilePath);
+// Criação do cliente de ObjectStorage com a autenticação configurada
+const client = new oci.ObjectStorageClient({authenticationDetailsProvider: provider});
+
 
 export const listBucketsOracle = async () => {
   try {
-    const compartmentId = "ocid1.tenancy.oc1..aaaaaaaaxfj3ognohyw6553sjzcx2jgye34pcvwwbz2mzcyzzb32oo5f6sqa"; // Substitua pelo OCID do compartimento
+    const compartmentId = process.env.CONPARTIMENT_ID // Substitua pelo OCID do compartimento
+    const namespaceName = await client.getNamespace({});
 
-    // Listar buckets
-    const buckets = await listBuckets(compartmentId);
-    // console.log("Buckets disponíveis:", buckets);
-    console.log("Buckets disponíveis:", buckets);
-    return buckets;
+    const response = await client.listBuckets({
+      namespaceName: namespaceName.value || "" ,
+      compartmentId: compartmentId || "",
+    });
+    console.log(response);
+    return response.items || [];
 
   } catch (error) {
     console.error("Erro:", error);
   }
 }
+// Função para listar objetos em um bucket
 export async function listItemsOracle(bucketName: string, region: string): Promise<any> {
   try {
-    // Autenticação usando o arquivo de configuração padrão (~/.oci/config)
-    // const configFilePath = path.join(__dirname,'..','providers','oracle' ,'.oci', 'config');
-    const provider = new ConfigFileAuthenticationDetailsProvider(configFilePath);
-
-    // Criação do cliente de ObjectStorage com a autenticação configurada
-    const client = new oci.ObjectStorageClient({
-      authenticationDetailsProvider: provider
-    });
-  
     // Obtém o namespace necessário para as operações
     const namespaceResponse = await client.getNamespace({});
     // console.log('Namespace:', namespaceResponse.value);
@@ -46,9 +44,6 @@ export async function listItemsOracle(bucketName: string, region: string): Promi
 
     // Usando o método correto para listar os objetos
     const response = await client.listObjects(request);
-   
-    // console.log('Objetos listados:', response.listObjects.objects || []);
-   // Processamento dos objetos listados
    return response.listObjects.objects || [];
   } catch (error) {
     console.error('Erro ao listar objetos:', error);
